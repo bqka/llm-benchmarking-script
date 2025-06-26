@@ -150,10 +150,62 @@ class GeminiBenchmark:
             df.to_csv(output_path, index=False)
             print(f"[Gemini] Saved output to {output_path}")
 
+class Validator:
+    def __init__(self, base_model: str, test_model: str, batch_size: int):
+        self.test_dir = os.path.join("outputs", f"bs-{batch_size}-" + test_model)
+        if not os.path.isdir(self.test_dir):
+            raise NotADirectoryError(f"Expected directory not found: {self.test_dir}")
+
+        self.base_model = base_model
+        self.test_model = test_model
+
+        self.csv_files = os.listdir(self.test_dir)
+
+    def compare(self, json_output_path):
+        results = {}
+
+        for file in self.csv_files:
+            path = os.path.join(self.test_dir, file)
+            df = pd.read_csv(path)
+
+            if self.base_model not in df.columns or self.test_model not in df.columns:
+                print(f"[{file}] Missing expected columns.")
+                continue
+
+            base_col = df[self.base_model].astype(str).str.strip().str.lower()
+            test_col = df[self.test_model].astype(str).str.strip().str.lower()
+
+            if len(base_col) != len(test_col):
+                print(f"[{file}] Row count mismatch.")
+                continue
+
+            matches = base_col == test_col
+            total = len(matches)
+            correct = int(matches.sum())
+
+            yes_count = (test_col == "yes").sum()
+            no_count = (test_col == "no").sum()
+
+            accuracy = round((correct / total) * 100, 2)
+
+            results[file] = {
+                "match_percentage": accuracy,
+                "rows": total,
+                "total_matches": correct,
+                "yes_count": int(yes_count),
+                "no_count": int(no_count)
+            }
+
+            print(f"[{file}] Accuracy: {accuracy}% | Yes: {yes_count} | No: {no_count}")
+
+        with open(json_output_path, "w") as f:
+            json.dump(results, f, indent=4)
+        print(f"\n✅ Saved validation results to {json_output_path}")
+
 # ---- Example Usage ----
-if __name__ == "__main__":
-    data_path = "human_evaluation_binary/DR.csv"
-    batch_size = 2
+# if __name__ == "__main__":
+    # data_path = "human_evaluation_binary/DR.csv"
+    # batch_size = 2
 
     # Groq
     # groq_model = "qwen/qwen3-32b"
@@ -162,7 +214,7 @@ if __name__ == "__main__":
     # groq_benchmark.run(groq_output)
 
     # Gemini
-    gemini_model = "models/gemini-2.0-flash"
-    gemini_output = "gemini_output"
-    gemini_benchmark = GeminiBenchmark(gemini_model, batch_size, data_path)
-    gemini_benchmark.run(gemini_output)
+    # gemini_model = "gemini-2.0-flash"
+    # gemini_output = "gemini_output"
+    # gemini_benchmark = GeminiBenchmark(gemini_model, batch_size, data_path)
+    # gemini_benchmark.run(gemini_output)
