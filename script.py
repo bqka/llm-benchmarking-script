@@ -167,6 +167,6 @@ if __name__ == "__main__":
 
     # Gemini
     gemini_model = "models/gemini-2.0-flash"
-    gemini_output = "gemini_output.csv"
+    gemini_output = "gemini_output"
     gemini_benchmark = GeminiBenchmark(gemini_model, batch_size, data_path)
     gemini_benchmark.run(gemini_output)
