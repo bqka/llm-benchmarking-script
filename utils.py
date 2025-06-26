@@ -41,7 +41,7 @@ class RateLimiter:
 
 # ---- Groq Benchmark ----
 class GroqBenchmark:
-    def __init__(self, model_name: str, batch_size: int, data_path: str):
+    def __init__(self, model_name: str, batch_size: int, data_path: str, rate_limiter: RateLimiter):
         api_key = os.getenv("GROQ_API_KEY")
         if not api_key:
             raise ValueError("Missing GROQ_API_KEY in .env")
@@ -50,9 +50,7 @@ class GroqBenchmark:
         self.model_name = model_name
         self.batch_size = batch_size
         self.data_path = data_path
-
-        rpm = next((m["rpm"] for m in model_config["groq-models"] if m["name"] == model_name), 60)
-        self.rate_limiter = RateLimiter(rpm)
+        self.rate_limiter = rate_limiter
 
     def generate(self, prompt: str) -> str:
         self.rate_limiter.wait_if_needed()
@@ -101,7 +99,7 @@ class GroqBenchmark:
 
 # ---- Gemini Benchmark ----
 class GeminiBenchmark:
-    def __init__(self, model_name: str, batch_size: int, data_path: str):
+    def __init__(self, model_name: str, batch_size: int, data_path: str, rate_limiter: RateLimiter):
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
             raise ValueError("Missing GEMINI_API_KEY in .env")
@@ -110,9 +108,7 @@ class GeminiBenchmark:
         self.model_name = model_name
         self.batch_size = batch_size
         self.data_path = data_path
-
-        rpm = next((m["rpm"] for m in model_config["gemini-models"] if m["name"] == model_name), 60)
-        self.rate_limiter = RateLimiter(rpm)
+        self.rate_limiter = rate_limiter
 
     def generate(self, prompt: str) -> str:
         self.rate_limiter.wait_if_needed()
